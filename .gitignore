@@ -34,7 +34,6 @@ venv/
 ENV/
 
 # Data files
-*.csv
 *.xlsx
 *.xls
 
