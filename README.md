@@ -1,111 +1,93 @@
-# Titanic Data Analysis Project
+# Titanic Survival Prediction Project
 
 ## Overview
 
-This project contains a detailed analysis of the Titanic dataset, exploring various aspects of the passengers and factors that influenced survival rates.
+This project implements a machine learning solution to predict passenger survival on the Titanic using various classification algorithms. The implementation features a modular, object-oriented design with comprehensive data preprocessing, model evaluation, and visualization capabilities.
 
 ## Project Structure
 
-```
-titanic_wi/
-│
+```python
+Titanic_wi/
 ├── data/               # Data directory
-│   ├── raw/           # Raw data files
-│   └── processed/     # Processed data files
-│
-├── notebooks/         # Jupyter notebooks for analysis
-│   └── analysis.ipynb
-│
+│   ├── train.csv      # Training dataset
+│   └── test.csv       # Test dataset
+├── notebooks/         # Jupyter notebooks
+│   └── titanic_analysis.ipynb
+├── plots/             # Generated plots
+│   ├── exploratory/
+│   ├── model_evaluation/
+│   └── feature_importance/
 ├── src/              # Source code
 │   ├── __init__.py
 │   ├── data_processing.py
 │   └── visualization.py
-│
-├── requirements.txt   # Project dependencies
-└── README.md         # Project documentation
+├── submissions/      # Model predictions
+├── requirements.txt  # Project dependencies
+└── report.md        # Detailed project report
 ```
 
-## Setup and Installation
+## Features
 
-### Prerequisites
+- Modular code structure with separate modules for data processing and visualization
+- Comprehensive feature engineering and preprocessing pipeline
+- Multiple machine learning models (Logistic Regression, Random Forest, SVM)
+- Grid search for hyperparameter optimization
+- Extensive visualization capabilities
+- Cross-validation and model evaluation metrics
 
-- Python 3.8 or higher
-- Git
-
-### Setting up the Development Environment
+## Installation
 
 1. Clone the repository:
 
-   ```bash
-   git clone <repository-url>
-   cd titanic_wi
-   ```
+```bash
+git clone [repository-url]
+cd Titanic_wi
+```
 
-2. Create a virtual environment:
+2. Create and activate a virtual environment:
 
-   ```bash
-   # Windows
-   python -m venv .venv
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
 
-   # Linux/MacOS
-   python3 -m venv .venv
-   ```
+3. Install dependencies:
 
-3. Activate the virtual environment:
+```bash
+pip install -r requirements.txt
+```
 
-   ```bash
-   # Windows (Command Prompt)
-   .venv\Scripts\activate
+## Usage
 
-   # Windows (PowerShell)
-   .venv\Scripts\Activate.ps1
+1. Open the Jupyter notebook:
 
-   # Linux/MacOS
-   source .venv/bin/activate
-   ```
+```bash
+jupyter notebook notebooks/titanic_analysis.ipynb
+```
 
-4. Install dependencies:
+2. Follow the notebook for:
+   - Data preprocessing and feature engineering
+   - Model training and optimization
+   - Performance evaluation
+   - Generating predictions
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Code Structure
 
-5. Deactivate the virtual environment when you're done:
+- `DataLoader`: Handles data loading operations
+- `FeatureProcessor`: Manages feature engineering and preprocessing
+- `TitanicPreprocessor`: Main preprocessing pipeline
+- `ModelEvaluator`: Handles model training, evaluation, and optimization
+- `TitanicVisualizer`: Creates various visualizations
 
-   ```bash
-   deactivate
-   ```
+## Results
 
-### Development Best Practices
+For detailed analysis and results, please refer to [report.md](report.md).
 
-- Always activate the virtual environment before working on the project
-- Update requirements.txt if you add new dependencies:
+## Dependencies
 
-  ```bash
-  pip freeze > requirements.txt
-  ```
-
-- Keep the virtual environment isolated from other projects
-
-## Analysis Questions
-
-The analysis covers various aspects including:
-
-- Passenger demographics
-- Survival rates analysis
-- Feature importance
-- Statistical analysis
-- Visualization of key findings
-
-## Technologies Used
-
-- Python 3.8+
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- Scikit-learn
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- pandas
+- numpy
+- scikit-learn
+- matplotlib
+- seaborn
+- jupyter notebook
