@@ -8,157 +8,241 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix, roc_curve, auc
+from typing import Optional, List, Union, Dict, Any
+import os
 
-def set_plotting_style():
-    """Set the default plotting style."""
-    plt.style.use('seaborn')
-    sns.set_palette("husl")
+class PlotConfig:
+    """Configuration for plot styling and paths."""
+    
+    FIGURE_SIZE = (12, 8)
+    STYLE = 'seaborn-v0_8'
+    PALETTE = 'husl'
+    DPI = 100
+    
+    # Plot directories
+    BASE_DIR = '../plots'
+    EXPLORATORY_DIR = os.path.join(BASE_DIR, 'exploratory')
+    MODEL_EVALUATION_DIR = os.path.join(BASE_DIR, 'model_evaluation')
+    FEATURE_IMPORTANCE_DIR = os.path.join(BASE_DIR, 'feature_importance')
+    
+    @classmethod
+    def set_style(cls) -> None: 
+        """Set the default plotting style."""
+        plt.style.use(cls.STYLE)
+        sns.set_palette(cls.PALETTE)
+        plt.rcParams['figure.dpi'] = cls.DPI
+    
+    @classmethod
+    def create_plot_dirs(cls) -> None:
+        """Create plot directories if they don't exist."""
+        for directory in [cls.BASE_DIR, cls.EXPLORATORY_DIR, 
+                         cls.MODEL_EVALUATION_DIR, cls.FEATURE_IMPORTANCE_DIR]:
+            os.makedirs(directory, exist_ok=True)
 
-def plot_survival_by_feature(df, feature, title=None):
-    """
-    Plot survival rate by a specific feature.
+class TitanicVisualizer:
+    """Class for creating visualizations for Titanic dataset analysis."""
     
-    Args:
-        df (pd.DataFrame): Input dataframe
-        feature (str): Feature to analyze
-        title (str, optional): Plot title
-    """
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=feature, y='Survived', data=df)
-    plt.title(title or f'Survival Rate by {feature}')
-    plt.ylabel('Survival Rate')
-    plt.tight_layout()
-
-def plot_age_distribution(df):
-    """
-    Plot age distribution by survival status.
+    def __init__(self):
+        PlotConfig.set_style()
     
-    Args:
-        df (pd.DataFrame): Input dataframe
-    """
-    plt.figure(figsize=(12, 6))
-    sns.histplot(data=df, x='Age', hue='Survived', multiple="stack", bins=30)
-    plt.title('Age Distribution by Survival Status')
-    plt.xlabel('Age')
-    plt.ylabel('Count')
-    plt.tight_layout()
-
-def plot_correlation_matrix(df):
-    """
-    Plot correlation matrix of numerical features.
+    def plot_survival_by_feature(self, 
+                               df: pd.DataFrame, 
+                               feature: str,
+                               title: Optional[str] = None,
+                               figsize: Optional[tuple] = None,
+                               save: bool = True) -> None:
+        """
+        Plot survival rate by a specific feature.
+        
+        Args:
+            df: Input dataframe
+            feature: Feature to analyze
+            title: Plot title
+            figsize: Figure size tuple (width, height)
+            save: Whether to save the plot
+        """
+        plt.figure(figsize=figsize or PlotConfig.FIGURE_SIZE)
+        
+        if df[feature].dtype in ['int64', 'float64']:
+            # For numerical features, use a line plot
+            survival_rates = df.groupby(feature)['Survived'].mean()
+            plt.plot(survival_rates.index, survival_rates.values, marker='o')
+        else:
+            # For categorical features, use a bar plot
+            sns.barplot(x=feature, y='Survived', data=df, errorbar=('ci', 95))
+        
+        plt.title(title or f'Survival Rate by {feature}')
+        plt.ylabel('Survival Rate')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        if save:
+            # Create exploratory directory if it doesn't exist
+            os.makedirs(PlotConfig.EXPLORATORY_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.EXPLORATORY_DIR, f'survival_by_{feature}.png'))
+            plt.close()
     
-    Args:
-        df (pd.DataFrame): Input dataframe
-    """
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    correlation_matrix = df[numeric_cols].corr()
-
-    plt.figure(figsize=(12, 8))
-    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
-    plt.title('Correlation Matrix of Numerical Features')
-    plt.tight_layout()
-
-def plot_feature_importance(feature_importance_df):
-    """
-    Plot feature importance from a model.
+    def plot_age_distribution(self, 
+                            df: pd.DataFrame,
+                            hue: Optional[str] = 'Survived',
+                            figsize: Optional[tuple] = None,
+                            save: bool = True) -> None:
+        """
+        Plot age distribution with optional grouping.
+        
+        Args:
+            df: Input dataframe
+            hue: Column to use for grouping (default: 'Survived')
+            figsize: Figure size tuple (width, height)
+            save: Whether to save the plot
+        """
+        plt.figure(figsize=figsize or PlotConfig.FIGURE_SIZE)
+        sns.kdeplot(data=df, x='Age', hue=hue, common_norm=False)
+        plt.title('Age Distribution by ' + hue)
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        if save:
+            # Create exploratory directory if it doesn't exist
+            os.makedirs(PlotConfig.EXPLORATORY_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.EXPLORATORY_DIR, 'age_distribution.png'))
+            plt.close()
     
-    Args:
-        feature_importance_df (pd.DataFrame): DataFrame with feature names and importance scores
-    """
-    plt.figure(figsize=(12, 6))
-    sns.barplot(x='Importance', y='Feature', data=feature_importance_df)
-    plt.title('Feature Importance Analysis')
-    plt.xlabel('Importance Score')
-    plt.tight_layout()
-
-def plot_confusion_matrix(y_true, y_pred, labels=None):
-    """
-    Plot confusion matrix.
+    def plot_correlation_matrix(self, 
+                              df: pd.DataFrame,
+                              figsize: Optional[tuple] = None,
+                              save: bool = True) -> None:
+        """
+        Plot correlation matrix of numerical features.
+        
+        Args:
+            df: Input dataframe
+            figsize: Figure size tuple (width, height)
+            save: Whether to save the plot
+        """
+        # Select only numeric columns
+        numeric_df = df.select_dtypes(include=[np.number])
+        
+        plt.figure(figsize=figsize or PlotConfig.FIGURE_SIZE)
+        mask = np.triu(np.ones_like(numeric_df.corr(), dtype=bool))
+        sns.heatmap(numeric_df.corr(), 
+                   mask=mask,
+                   annot=True, 
+                   fmt='.2f',
+                   cmap='coolwarm')
+        plt.title('Feature Correlation Matrix')
+        plt.tight_layout()
+        
+        if save:
+            # Create exploratory directory if it doesn't exist
+            os.makedirs(PlotConfig.EXPLORATORY_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.EXPLORATORY_DIR, 'correlation_matrix.png'))
+            plt.close()
     
-    Args:
-        y_true (array-like): True labels
-        y_pred (array-like): Predicted labels
-        labels (list, optional): Class labels
-    """
-    cm = confusion_matrix(y_true, y_pred)
+    def plot_confusion_matrix(self, 
+                            y_true: np.ndarray,
+                            y_pred: np.ndarray,
+                            save: bool = True) -> None:
+        """
+        Plot confusion matrix.
+        
+        Args:
+            y_true: True labels
+            y_pred: Predicted labels
+            save: Whether to save the plot
+        """
+        cm = confusion_matrix(y_true, y_pred)
+        plt.figure(figsize=PlotConfig.FIGURE_SIZE)
+        
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.tight_layout()
+        
+        if save:
+            # Create model evaluation directory if it doesn't exist
+            os.makedirs(PlotConfig.MODEL_EVALUATION_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.MODEL_EVALUATION_DIR, 'confusion_matrix.png'))
+            plt.close()
     
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title('Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
+    def plot_roc_curve(self, 
+                      y_true: np.ndarray,
+                      y_pred_proba: np.ndarray,
+                      model_name: str,
+                      save: bool = True) -> None:
+        """
+        Plot ROC curve.
+        
+        Args:
+            y_true: True labels
+            y_pred_proba: Predicted probabilities
+            model_name: Name of the model
+            save: Whether to save the plot
+        """
+        fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+        roc_auc = auc(fpr, tpr)
+        
+        plt.figure(figsize=PlotConfig.FIGURE_SIZE)
+        plt.plot(fpr, tpr, label=f'{model_name} (AUC = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title(f'ROC Curve - {model_name}')
+        plt.legend(loc="lower right")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        if save:
+            # Create model evaluation directory if it doesn't exist
+            os.makedirs(PlotConfig.MODEL_EVALUATION_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.MODEL_EVALUATION_DIR, f'roc_curve_{model_name}.png'))
+            plt.close()
     
-    if labels:
-        plt.xticks(np.arange(len(labels)) + 0.5, labels)
-        plt.yticks(np.arange(len(labels)) + 0.5, labels)
+    def plot_feature_importance(self, 
+                              feature_importance_df: pd.DataFrame,
+                              save: bool = True) -> None:
+        """
+        Plot feature importance.
+        
+        Args:
+            feature_importance_df: DataFrame with feature importance scores
+            save: Whether to save the plot
+        """
+        plt.figure(figsize=PlotConfig.FIGURE_SIZE)
+        sns.barplot(x='Importance', y='Feature', data=feature_importance_df)
+        plt.title('Feature Importance')
+        plt.xlabel('Importance Score')
+        plt.tight_layout()
+        
+        if save:
+            # Create feature importance directory if it doesn't exist
+            os.makedirs(PlotConfig.FEATURE_IMPORTANCE_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.FEATURE_IMPORTANCE_DIR, 'feature_importance.png'))
+            plt.close()
     
-    plt.tight_layout()
-
-def plot_roc_curve(y_true, y_pred_proba, model_name="Model"):
-    """
-    Plot ROC curve.
-    
-    Args:
-        y_true (array-like): True labels
-        y_pred_proba (array-like): Predicted probabilities
-        model_name (str): Name of the model
-    """
-    fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
-    roc_auc = auc(fpr, tpr)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, label=f'{model_name} (AUC = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.tight_layout()
-
-def plot_model_comparison(models_df):
-    """
-    Plot model comparison across different metrics.
-    
-    Args:
-        models_df (pd.DataFrame): DataFrame with model names and their metrics
-    """
-    plt.figure(figsize=(12, 6))
-    models_df.plot(kind='bar', width=0.8)
-    plt.title('Model Comparison Across Metrics')
-    plt.xlabel('Models')
-    plt.ylabel('Score')
-    plt.legend(title='Metrics', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-
-def create_analysis_plots(df):
-    """
-    Create a comprehensive set of analysis plots.
-    
-    Args:
-        df (pd.DataFrame): Input dataframe
-    """
-    set_plotting_style()
-    
-    # Create a figure with subplots
-    fig = plt.figure(figsize=(20, 15))
-    
-    # 1. Survival by Gender
-    plt.subplot(2, 2, 1)
-    plot_survival_by_feature(df, 'Sex', 'Survival Rate by Gender')
-    
-    # 2. Survival by Passenger Class
-    plt.subplot(2, 2, 2)
-    plot_survival_by_feature(df, 'Pclass', 'Survival Rate by Passenger Class')
-    
-    # 3. Age Distribution
-    plt.subplot(2, 2, 3)
-    plot_age_distribution(df)
-    
-    # 4. Correlation Matrix
-    plt.subplot(2, 2, 4)
-    plot_correlation_matrix(df)
-    
-    plt.tight_layout()
-    plt.show()
+    def plot_model_comparison(self, 
+                            results_df: pd.DataFrame,
+                            save: bool = True) -> None:
+        """
+        Plot model comparison metrics.
+        
+        Args:
+            results_df: DataFrame with model performance metrics
+            save: Whether to save the plot
+        """
+        plt.figure(figsize=PlotConfig.FIGURE_SIZE)
+        results_df.plot(kind='bar', ax=plt.gca())
+        plt.title('Model Performance Comparison')
+        plt.xlabel('Metric')
+        plt.ylabel('Score')
+        plt.legend(title='Models', bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        
+        if save:
+            # Create model evaluation directory if it doesn't exist
+            os.makedirs(PlotConfig.MODEL_EVALUATION_DIR, exist_ok=True)
+            plt.savefig(os.path.join(PlotConfig.MODEL_EVALUATION_DIR, 'model_comparison.png'))
+            plt.close()
